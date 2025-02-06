@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkers Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: burlywood;
+            flex-direction: column;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 5px solid black;
+        }
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .dark {
+            background-color: black;
+        }
+        .light {
+            background-color: beige;
+        }
+        .piece {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .red {
+            background-color: red;
+        }
+        .black {
+            background-color: blue;
+        }
+        .selected {
+            border: 3px solid yellow;
+        }
+    </style>
+</head>
+<body>
+    <h2 id="turn-indicator">Turn: Red</h2>
+    <div class="board" id="board"></div>
+    <script>
+        const board = document.getElementById("board");
+        const turnIndicator = document.getElementById("turn-indicator");
+        let selectedPiece = null;
+        let turn = "red";
+
+        function createBoard() {
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    let square = document.createElement("div");
+                    square.classList.add("square", (row + col) % 2 === 0 ? "light" : "dark");
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    board.appendChild(square);
+                    
+                    if ((row < 3 || row > 4) && (row + col) % 2 !== 0) {
+                        let piece = document.createElement("div");
+                        piece.classList.add("piece", row < 3 ? "red" : "black");
+                        piece.dataset.row = row;
+                        piece.dataset.col = col;
+                        piece.addEventListener("click", selectPiece);
+                        square.appendChild(piece);
+                    }
+                }
+            }
+        }
+
+        function selectPiece(event) {
+            if (selectedPiece) {
+                selectedPiece.classList.remove("selected");
+            }
+            if (event.target.classList.contains(turn)) {
+                selectedPiece = event.target;
+                selectedPiece.classList.add("selected");
+            }
+        }
+
+        board.addEventListener("click", function(event) {
+            if (!selectedPiece) return;
+            let target = event.target;
+            if (target.classList.contains("piece")) return;
+            
+            let square = target.classList.contains("square") ? target : target.parentElement;
+            if (!square.classList.contains("dark")) return;
+            
+            let newRow = parseInt(square.dataset.row);
+            let newCol = parseInt(square.dataset.col);
+            let oldRow = parseInt(selectedPiece.dataset.row);
+            let oldCol = parseInt(selectedPiece.dataset.col);
+            
+            let rowDiff = Math.abs(newRow - oldRow);
+            let colDiff = Math.abs(newCol - oldCol);
+            
+            if (rowDiff === 1 && colDiff === 1) {
+                movePiece(selectedPiece, square, newRow, newCol);
+            } else if (rowDiff === 2 && colDiff === 2) {
+                let middleRow = (oldRow + newRow) / 2;
+                let middleCol = (oldCol + newCol) / 2;
+                let middleSquare = document.querySelector(`.square[data-row='${middleRow}'][data-col='${middleCol}']`);
+                let middlePiece = middleSquare.firstChild;
+                
+                if (middlePiece && !middlePiece.classList.contains(turn)) {
+                    middleSquare.removeChild(middlePiece);
+                    movePiece(selectedPiece, square, newRow, newCol);
+                }
+            }
+        });
+
+        function movePiece(piece, square, newRow, newCol) {
+            square.appendChild(piece);
+            piece.dataset.row = newRow;
+            piece.dataset.col = newCol;
+            piece.classList.remove("selected");
+            selectedPiece = null;
+            switchTurn();
+            checkWin();
+        }
+
+        function switchTurn() {
+            turn = turn === "red" ? "black" : "red";
+            turnIndicator.innerText = `Turn: ${turn.charAt(0).toUpperCase() + turn.slice(1)}`;
+        }
+
+        function checkWin() {
+            let redPieces = document.querySelectorAll(".piece.red").length;
+            let blackPieces = document.querySelectorAll(".piece.black").length;
+            if (redPieces === 0) {
+                alert("Black wins!");
+                resetGame();
+            } else if (blackPieces === 0) {
+                alert("Red wins!");
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            board.innerHTML = "";
+            createBoard();
+            turn = "red";
+            turnIndicator.innerText = "Turn: Red";
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
